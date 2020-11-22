@@ -1,0 +1,17 @@
+{
+  "topic": "pageviews",
+  "fields": [
+    {
+      "name": "viewtime",
+      "type": "BIGINT"
+    },
+    {
+      "name": "userid",
+      "type": "STRING"
+    },
+    {
+      "name": "pageid",
+      "type": "STRING"
+    }
+  ]
+}

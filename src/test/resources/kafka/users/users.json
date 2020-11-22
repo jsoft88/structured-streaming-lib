@@ -1,0 +1,5 @@
+{"topic": "users", "value": "{\"userid\":  \"user1\", \"gender\":  \"M\", \"registertime\": 500, \"regionid\":  \"1\"}", "timestamp": 1000 }
+{"topic": "users", "value": "{\"userid\":  \"user5\", \"gender\":  \"F\", \"registertime\": 8000, \"regionid\": \"5\"}", "timestamp": 1000 }
+{"topic": "users", "value": "{\"userid\":  \"user2\", \"gender\":  \"F\", \"registertime\": 2500, \"regionid\": \"2\"}", "timestamp": 1000 }
+{"topic": "users", "value": "{\"userid\":  \"user3\", \"gender\":  \"M\", \"registertime\": 4900, \"regionid\": \"3\"}", "timestamp": 1000 }
+{"topic": "users", "value": "{\"userid\":  \"user4\", \"gender\":  \"F\", \"registertime\": 9800, \"regionid\": \"4\"}", "timestamp": 1000 }
