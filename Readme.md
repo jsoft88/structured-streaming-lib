@@ -1,6 +1,6 @@
 # Generic structured streaming library
  ## Design
- To make it extensible, there is a main base class: `com.joyn.challenge.stream.core.StreamJob`, which is the base of every streaming
+ To make it extensible, there is a main base class: `com.org.challenge.stream.core.StreamJob`, which is the base of every streaming
  task we might have. The main structure is as follows: 
    ```scala
    package com.org.challenge.stream.core

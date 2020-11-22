@@ -10,7 +10,6 @@ import com.org.challenge.stream.utils.Utils
 import org.apache.spark.sql.functions.{col, from_json, from_unixtime}
 import org.apache.spark.sql.types.{StringType, StructType, TimestampType}
 import org.apache.spark.sql.{DataFrame, SparkSession}
-import com.org.challenge.stream.utils.Logger
 
 sealed trait SchemaType {
   def getDefaultWatermarkColName(): String
@@ -42,6 +41,7 @@ class PageViewsStream(params: Params) extends StreamJob[Params](params) {
   var topics: Seq[String] = Seq.empty
   var schemaManagement: SchemaManagement = _
   val utils: Utils = new Utils()
+
 
   @VisibleForTesting
   private[kafka] def getSchemaByType(topic: String): StructType = {
@@ -130,7 +130,7 @@ class PageViewsStream(params: Params) extends StreamJob[Params](params) {
               schemaForTopic
                 .filterNot(_.name.equals(watermarkCol))
                 .map(f => col(s"data.${f.name}"))
-                .foldRight(Seq(from_unixtime(col(watermarkCol)).cast(TimestampType).as(watermarkCol)))((cc, cs) => cs :+ cc): _*)
+                .foldRight(Seq(from_unixtime(col(s"data.${watermarkCol}")).cast(TimestampType).as(watermarkCol)))((cc, cs) => cs :+ cc): _*)
             .withWatermark(watermarkCol, s"${this.topicsDelayPair.get(t).get} seconds")
         }
       }

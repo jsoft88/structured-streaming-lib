@@ -1,4 +1,4 @@
-package com.joyn.challenge.stream.schemas.default
+package com.org.challenge.stream.schemas.default
 
 import com.org.challenge.stream.schemas.{RegistryHandler, SchemaManagement}
 import com.org.challenge.stream.schemas.default.FileBasedSchemaModel

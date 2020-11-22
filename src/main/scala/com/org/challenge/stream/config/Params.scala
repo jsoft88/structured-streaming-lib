@@ -157,7 +157,7 @@ final class Params {
 
 class CLIParams {
   def buildCLIParams(args: Seq[String]): Params = {
-    val parser = new scopt.OptionParser[ParamsBuilder]("Joyn Streaming Challenge") {
+    val parser = new scopt.OptionParser[ParamsBuilder]("Streaming lib") {
       opt[Seq[String]](name = "kafka-brokers")
         .action((value, c) => c.withKafkaBrokers(value.mkString(",")))
         .text("list of kafka brokers, separated by ','")

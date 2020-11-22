@@ -1,16 +1,19 @@
 package com.org.challenge.stream.transformation
 
 import com.org.challenge.stream.config.ParamsBuilder
-import com.org.challenge.stream.factory.{ReaderFactory}
+import com.org.challenge.stream.factory.ReaderFactory
 import com.org.challenge.stream.helpers.{FileReader, SparkUtils, TestUtils}
 import com.org.challenge.stream.jobs.kafka.InputDataframeScaffolding
-import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.sql.streaming.{OutputMode, Trigger}
 import org.mockito.Mockito
 import org.scalatest.funsuite.AnyFunSuite
 import org.apache.spark.sql.functions._
+import org.scalatest.BeforeAndAfterAll
 
-class TopPagesByGenderTest extends AnyFunSuite {
+class TopPagesByGenderTest extends AnyFunSuite with BeforeAndAfterAll {
+  val sparkSession = SparkSession.builder().master("local[*]").appName("testtoppages").getOrCreate()
+
   test("config is parsed correctly") {
     val appParams = new ParamsBuilder()
       .withReaderType(ReaderFactory.KafkaReader.toString)
@@ -26,10 +29,10 @@ class TopPagesByGenderTest extends AnyFunSuite {
       .withSlidingInterval(5L)
       .build()
 
-    val transformation = TopPagesByGender(SparkUtils.getGlobalTestSparkSession(), appParams)
+    val transformation = TopPagesByGender(this.sparkSession, appParams)
     val transformationSpy = Mockito.spy[TopPagesByGender](transformation)
 
-    val fileReader = FileReader(SparkUtils.getGlobalTestSparkSession(), appParams)
+    val fileReader = FileReader(this.sparkSession, appParams)
 
     assert(transformationSpy.topics.length == 2)
     assert(transformationSpy.topics.filter(_.equals("pageviews")).length == 1)
@@ -51,7 +54,7 @@ class TopPagesByGenderTest extends AnyFunSuite {
       .withSlidingInterval(5L)
       .build()
 
-    val transformation = TopPagesByGender(SparkUtils.getGlobalTestSparkSession(), appParams)
+    val transformation = TopPagesByGender(this.sparkSession, appParams)
     val transformationSpy = Mockito.spy[TopPagesByGender](transformation)
 
     assertThrows[IllegalArgumentException]{
@@ -87,16 +90,15 @@ class TopPagesByGenderTest extends AnyFunSuite {
       getClass.getResource("/kafka/streaming/pageviews/pageviews.json").getPath
     )
 
-    val inputDFs = InputDataframeScaffolding.generateInputStreamThroughSpies(appParams, true)
-    val transformation = TopPagesByGender(SparkUtils.getGlobalTestSparkSession(), appParams)
+    val inputDFs = InputDataframeScaffolding.generateInputStreamThroughSpies(this.sparkSession, appParams, true)
+    val transformation = TopPagesByGender(this.sparkSession, appParams)
     val transformationSpy = Mockito.spy[TopPagesByGender](transformation)
 
     val transformedDF = transformationSpy.transformStream(inputDFs)
 
     assert(transformedDF != None)
 
-    val expectedOutput = SparkUtils
-      .getGlobalTestSparkSession()
+    val expectedOutput = this.sparkSession
       .read
       .json(s"""file://${getClass.getResource("/kafka/expected_output.json").getPath}""")
 
@@ -110,8 +112,8 @@ class TopPagesByGenderTest extends AnyFunSuite {
       })
       .start()
 
-    SparkUtils.getGlobalTestSparkSession().streams.awaitAnyTermination()
-    val finalDF = SparkUtils.getGlobalTestSparkSession().sql("SELECT * FROM global_temp.top_pages_gender_final")
+    this.sparkSession.streams.awaitAnyTermination()
+    val finalDF = this.sparkSession.sql("SELECT * FROM global_temp.top_pages_gender_final")
     finalDF.show()
 
     assert(finalDF.count() == expectedOutput.count())
@@ -123,4 +125,6 @@ class TopPagesByGenderTest extends AnyFunSuite {
           .collect().head.getAs[Long]("total_viewtime")
     )
   }
+
+  override def afterAll(): Unit = this.sparkSession.sparkContext.stop(); super.afterAll()
 }

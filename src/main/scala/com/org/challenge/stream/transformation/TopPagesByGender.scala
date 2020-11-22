@@ -13,7 +13,7 @@ object TopPagesByGender {
 
 /**
  * Given that transformations are made based on stakeholders requirements, we will have different
- * classes here for providing such functionalities. In this class, Joyn recruitment team asked the following:
+ * classes here for providing such functionalities.
  * ------------------------------------------
  * - Joins the messages in these two topics on the user id field
  * - Uses a 1 minute hopping window with 10 second advances to compute the 10 most viewed pages by viewtime for every value of gender
@@ -24,8 +24,8 @@ object TopPagesByGender {
  * extend the framework and provide it via Factory.
  *
  * {@note}: Notice that there's no loss of generalization by directly referencing
- * {@code com.joyn.challenge.stream.jobs.kafka.PageViewsStream.{PageViewsSchema, UsersSchema}, since as mentioned
- * in {@see com.joyn.challenge.stream.jobs.kafka.PageViewsStream}, I am using the companion object as a schema registry.
+ * {@code com.org.challenge.stream.jobs.kafka.PageViewsStream.{PageViewsSchema, UsersSchema}, since as mentioned
+ * in {@see com.org.challenge.stream.jobs.kafka.PageViewsStream}, I am using the companion object as a schema registry.
  *
  * Given that the transformation is specific to a requirement, it is ok to reference directly, even though the user is prompted
  * to provide topics via CLI params. However, this allows for flexibility in other components, say, readers.

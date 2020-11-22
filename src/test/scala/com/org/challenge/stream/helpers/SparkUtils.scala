@@ -8,10 +8,13 @@ object SparkUtils {
   def getGlobalTestSparkSession(): SparkSession = {
     this.sparkSession match {
       case None => {
-        SparkSession.builder()
+        this.sparkSession = Some(SparkSession
+          .builder()
           .appName("spark-test-session")
           .master("local[*]")
-          .getOrCreate()
+          .getOrCreate())
+
+        this.sparkSession.get
       }
       case Some(ss) => ss
     }
@@ -20,7 +23,7 @@ object SparkUtils {
   def stopSparkSession(): Unit = {
     this.sparkSession match {
       case None =>
-      case Some(ss) => ss.stop()
+      case Some(_) => this.sparkSession.get.stop(); this.sparkSession = None
     }
   }
 }

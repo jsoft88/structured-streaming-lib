@@ -1,4 +1,4 @@
-package com.joyn.challenge.stream.schemas.default
+package com.org.challenge.stream.schemas.default
 
 import com.org.challenge.stream.schemas.{RegistryAuthorization, RegistryHandler, RegistryRequestResponse, RegistryRequestType}
 import com.org.challenge.stream.utils.Utils

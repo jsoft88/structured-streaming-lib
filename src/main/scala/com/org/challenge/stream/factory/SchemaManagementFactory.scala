@@ -1,6 +1,6 @@
 package com.org.challenge.stream.factory
 
-import com.joyn.challenge.stream.schemas.default.{FileSchemaRegistryHandler, SchemaFromFileManagement}
+import com.org.challenge.stream.schemas.default.{FileSchemaRegistryHandler, SchemaFromFileManagement}
 import com.org.challenge.stream.schemas.{RegistryHandler, SchemaManagement}
 
 trait SchemaManagementType

@@ -3,15 +3,17 @@ package com.org.challenge.stream.jobs.kafka
 import com.org.challenge.stream.config.{Params, ParamsBuilder}
 import com.org.challenge.stream.factory.{ReaderFactory, ReaderType, SchemaManagementFactory}
 import com.org.challenge.stream.helpers.{FileReader, SparkUtils}
-import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.sql.streaming.{OutputMode, Trigger}
 import org.apache.spark.sql.types.StructType
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.mockito.{ArgumentMatchers, Mockito}
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.funsuite.AnyFunSuite
 
-class PageViewsStreamTest extends AnyFunSuite {
+class PageViewsStreamTest extends AnyFunSuite with BeforeAndAfterAll {
+  var sparkSession = SparkSession.builder().master("local[*]").appName("testpageviewsstream").getOrCreate()
 
   test("Reader from factory produces two dataframes hashed by topics") {
     val appParams = new ParamsBuilder()
@@ -26,32 +28,12 @@ class PageViewsStreamTest extends AnyFunSuite {
       .withKafkaBrokers("localhost:9092")
       .withSchemaManager("dummyManager")
       .build()
-
-//    val fileReader = FileReader(SparkUtils.getGlobalTestSparkSession(), appParams)
-//    val applicationSpy = Mockito.spy[PageViewsStream](new PageViewsStream(appParams))
-//
-//    Mockito.doAnswer(new Answer[StructType]() {
-//      override def answer(invocation: InvocationOnMock): StructType = {
-//        fileReader.schemaPerFile.get(invocation.getArgument[String](0)).head
-//      }
-//    }).when(applicationSpy).getSchemaByType(ArgumentMatchers.anyString())
-//
-//    Mockito.doAnswer(new Answer[FileReader]() {
-//      override def answer(invocation: InvocationOnMock): FileReader = {
-//        FileReader(SparkUtils.getGlobalTestSparkSession(), invocation.getArgument[Params](1))
-//      }
-//    }).when(applicationSpy).getReaderFromFactory(ArgumentMatchers.any[ReaderType](), ArgumentMatchers.any[Params]())
-//
-//    Mockito.doReturn(SchemaManagementFactory.getSchemaManagementInstance(SchemaManagementFactory.SchemaFromFileManagement, None), Nil: _*)
-//      .when(applicationSpy).getSchemaManagementInstance(ArgumentMatchers.anyString())
-//
-//    applicationSpy.setupJob()
-    val readDataframes = InputDataframeScaffolding.generateInputStreamThroughSpies(appParams)
+    val readDataframes = InputDataframeScaffolding.generateInputStreamThroughSpies(this.sparkSession, appParams)
     assert(readDataframes != None)
 
     assert(readDataframes.get.keys.size == 2)
 
-    var pageViewsForAsserts = SparkUtils.getGlobalTestSparkSession().emptyDataFrame
+    var pageViewsForAsserts = this.sparkSession.emptyDataFrame
     readDataframes
       .get
       .get("pageviews")
@@ -62,7 +44,7 @@ class PageViewsStreamTest extends AnyFunSuite {
       .foreachBatch((batchDF: DataFrame, batchId: Long) => pageViewsForAsserts = batchDF.as("df1"))
       .start()
 
-    var usersForAsserts = SparkUtils.getGlobalTestSparkSession().emptyDataFrame
+    var usersForAsserts = this.sparkSession.emptyDataFrame
     readDataframes
       .get
       .get("users")
@@ -73,7 +55,7 @@ class PageViewsStreamTest extends AnyFunSuite {
       .foreachBatch((batchDF: DataFrame, batchId: Long) => usersForAsserts = batchDF.as("df2"))
       .start()
 
-    SparkUtils.getGlobalTestSparkSession().streams.awaitAnyTermination()
+    this.sparkSession.streams.awaitAnyTermination()
 
     pageViewsForAsserts.show(20, false)
     usersForAsserts.show(20, false)
@@ -95,31 +77,12 @@ class PageViewsStreamTest extends AnyFunSuite {
       .withSchemaManager("dummyManager")
       .build()
 
-//    val fileReader = FileReader(SparkUtils.getGlobalTestSparkSession(), appParams)
-//    val applicationSpy = Mockito.spy[PageViewsStream](new PageViewsStream(appParams))
-//
-//    Mockito.doAnswer(new Answer[StructType]() {
-//      override def answer(invocation: InvocationOnMock): StructType = {
-//        fileReader.schemaPerFile.get(invocation.getArgument[String](0)).head
-//      }
-//    }).when(applicationSpy).getSchemaByType(ArgumentMatchers.anyString())
-//
-//    Mockito.doAnswer(new Answer[FileReader]() {
-//      override def answer(invocation: InvocationOnMock): FileReader = {
-//        FileReader(SparkUtils.getGlobalTestSparkSession(), invocation.getArgument[Params](1))
-//      }
-//    }).when(applicationSpy).getReaderFromFactory(ArgumentMatchers.any[ReaderType](), ArgumentMatchers.any[Params]())
-//
-//    Mockito.doReturn(SchemaManagementFactory.getSchemaManagementInstance(SchemaManagementFactory.SchemaFromFileManagement, None), Nil: _*)
-//      .when(applicationSpy).getSchemaManagementInstance(ArgumentMatchers.anyString())
-//
-//    applicationSpy.setupJob()
-    val readDataframes = InputDataframeScaffolding.generateInputStreamThroughSpies(appParams)
+    val readDataframes = InputDataframeScaffolding.generateInputStreamThroughSpies(this.sparkSession, appParams)
     assert(readDataframes != None)
 
     assert(readDataframes.get.keys.size == 2)
 
-    var pageViewsForAsserts = SparkUtils.getGlobalTestSparkSession().emptyDataFrame
+    var pageViewsForAsserts = this.sparkSession.emptyDataFrame
     readDataframes
       .get
       .get("pageviews")
@@ -130,7 +93,7 @@ class PageViewsStreamTest extends AnyFunSuite {
       .foreachBatch((batchDF: DataFrame, batchId: Long) => pageViewsForAsserts = batchDF.as("df1"))
       .start()
 
-    var usersForAsserts = SparkUtils.getGlobalTestSparkSession().emptyDataFrame
+    var usersForAsserts = this.sparkSession.emptyDataFrame
     readDataframes
       .get
       .get("users")
@@ -141,7 +104,11 @@ class PageViewsStreamTest extends AnyFunSuite {
       .foreachBatch((batchDF: DataFrame, batchId: Long) => usersForAsserts = batchDF.as("df2"))
       .start()
 
-    SparkUtils.getGlobalTestSparkSession().streams.awaitAnyTermination()
+    this.sparkSession.streams.awaitAnyTermination()
     assert(pageViewsForAsserts.schema.fields.filter(_.name.equals("timestamp")).isEmpty)
   }
+
+  override protected def beforeAll(): Unit = super.beforeAll()
+
+  override protected def afterAll(): Unit = this.sparkSession.sparkContext.stop(); super.afterAll()
 }
