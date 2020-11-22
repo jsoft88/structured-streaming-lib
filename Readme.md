@@ -187,4 +187,4 @@ Execute with challenge specs -> `/bin/spark-submit --class com.org.challenge.str
 
 Make sure to check the path to jar
 
-Note: you can also run the tests via `sbt test` 
+Note: you can also run the tests via `sbt testOnly *<TestClass>` 
