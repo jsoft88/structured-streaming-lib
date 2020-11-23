@@ -157,6 +157,7 @@ class PageViewsStream(params: Params) extends StreamJob[Params](params) {
 
   @VisibleForTesting
   override protected[kafka] def finalizeJob(): Unit = {
+    this.spark.streams.awaitAnyTermination()
     this.spark.stop()
   }
 }

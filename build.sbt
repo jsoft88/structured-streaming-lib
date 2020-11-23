@@ -22,3 +22,7 @@ libraryDependencies += "org.scala-lang" % "scala-reflect" % "2.12.12"
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.1" % Test
 libraryDependencies += "org.scalactic" %% "scalactic" % "3.2.1"
 libraryDependencies += "org.scalatestplus" %% "mockito-3-4" % "3.2.2.0" % "test"
+
+test in assembly := {}
+
+mainClass in assembly := Some("com.org.challenge.stream.AppLibrary")
