@@ -1,14 +1,14 @@
 package com.org.challenge.stream.core
 
 import com.org.challenge.stream.utils.Logger
-import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.{DataFrame, SparkSession}
 
 /**
  * Base abstraction for streaming jobs.
  * @param params parameters passed to the streaming job
  * @tparam P type of the parameters passed to the streaming job
  */
-abstract class StreamJob[P](params: P) extends Logger {
+abstract class StreamJob[P](spark: SparkSession, params: P) extends Logger {
   /**
    * Perform any initializations required by the job, possibly by accessing the params object.
    */

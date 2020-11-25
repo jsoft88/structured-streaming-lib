@@ -29,8 +29,7 @@ object PageViewsStream {
   val DefaultWatermarkField = "timestamp"
 }
 
-class PageViewsStream(params: Params) extends StreamJob[Params](params) {
-  var spark: SparkSession = _
+class PageViewsStream(spark: SparkSession, params: Params) extends StreamJob[Params](spark, params) {
   var usersDelaySeconds: Long = 0L
   var pageViewsDelaySeconds: Long = 0L
   var topicsDelayPair: Map[String, Long] = Map.empty

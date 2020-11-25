@@ -13,7 +13,7 @@ object InputDataframeScaffolding {
   def generateInputStreamThroughSpies(sparkSession: SparkSession, appParams: Params, patchedTimestamp: Boolean = false): Option[Map[String, DataFrame]] = {
 
     val fileReader = FileReader(sparkSession, appParams, patchedTimestamp)
-    val applicationSpy = Mockito.spy[PageViewsStream](new PageViewsStream(appParams))
+    val applicationSpy = Mockito.spy[PageViewsStream](new PageViewsStream(sparkSession, appParams))
 
     Mockito.doAnswer(new Answer[StructType]() {
       override def answer(invocation: InvocationOnMock): StructType = {
