@@ -13,9 +13,9 @@ object TestUtils {
       val outputFile = new File(outputPath)
       val bw = new BufferedWriter(new FileWriter(outputFile))
       scala.io.Source.fromInputStream(inputStream).getLines().foreach { line =>
-        parse(line).toOption match {
-          case None => throw new Exception(s"Error while parsing: ${line}")
-          case Some(js) => {
+        parse(line) match {
+          case Left(err) => throw new Exception(s"Error while parsing: ${line}. ${err.message}")
+          case Right(js) => {
             js.hcursor.withFocus(jObj => {
               jObj.mapObject(j => j.remove("timestamp").add("timestamp", Json.fromLong(System.currentTimeMillis()/1000L)))
             }).top match {

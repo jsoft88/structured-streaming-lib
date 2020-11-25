@@ -2,7 +2,7 @@ name := "streaming-lib"
 
 version := "0.1"
 
-scalaVersion := "2.12.12"
+scalaVersion := "2.11.12"
 
 artifactName := { (sv: ScalaVersion, module: ModuleID, artifact: Artifact) =>
   artifact.name + "_" + sv.binary + "-2.4.6" + "_" + module.revision + "." + artifact.extension
@@ -16,7 +16,7 @@ libraryDependencies += "io.circe" %% "circe-core" % "0.11.2"
 libraryDependencies += "io.circe" %% "circe-generic" % "0.11.2"
 libraryDependencies += "io.circe" %% "circe-parser" % "0.11.2"
 libraryDependencies += "io.circe" %% "circe-optics" % "0.11.0"
-libraryDependencies += "org.scala-lang" % "scala-reflect" % "2.12.12"
+libraryDependencies += "org.scala-lang" % "scala-reflect" % "2.11.12"
 
 // Testing
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.1" % Test
