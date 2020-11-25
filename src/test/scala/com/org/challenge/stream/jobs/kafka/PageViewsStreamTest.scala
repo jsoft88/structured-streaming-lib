@@ -1,14 +1,9 @@
 package com.org.challenge.stream.jobs.kafka
 
-import com.org.challenge.stream.config.{Params, ParamsBuilder}
-import com.org.challenge.stream.factory.{ReaderFactory, ReaderType, SchemaManagementFactory}
-import com.org.challenge.stream.helpers.{FileReader, SparkUtils}
+import com.org.challenge.stream.config.{ParamsBuilder}
+import com.org.challenge.stream.factory.{ReaderFactory}
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.sql.streaming.{OutputMode, Trigger}
-import org.apache.spark.sql.types.StructType
-import org.mockito.invocation.InvocationOnMock
-import org.mockito.stubbing.Answer
-import org.mockito.{ArgumentMatchers, Mockito}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.funsuite.AnyFunSuite
 
