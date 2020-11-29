@@ -1,9 +1,10 @@
 package com.org.challenge.stream.transformation
 
 import com.org.challenge.stream.config.Params
+import com.org.challenge.stream.utils.Logger
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
-abstract class BaseTransform(spark: SparkSession, params: Params) {
+abstract class BaseTransform(spark: SparkSession, params: Params) extends Logger {
   this.setupTransformation()
 
   /**

@@ -117,12 +117,20 @@ class PageViewsStream(spark: SparkSession, params: Params) extends StreamJob[Par
       val topicDF = this.getReaderFromFactory(ReaderFactory.KafkaReader, kafkaParams).read() match {
         case None => this.log.error(s"An error occurred while reading topic: ${t}"); throw new Exception(s"Failed to read from topic ${t}")
         case Some(df) if watermarkCol.equals(PageViewsStream.DefaultWatermarkField)=> {
+          this.log.info("Watermark column is not inside data, it is part of kafka's schema")
+          this.log.info(s"Processing topic: ${t}, from brokers: ${this.kafkaBrokers}")
+          this.log.info(s"Watermark column is ${watermarkCol}")
+          this.log.info(s"Maximum delay for messages is ${this.topicsDelayPair.get(t).get} seconds")
           df
             .select(from_json(col("value").cast(StringType), schemaForTopic).as("data"), col(watermarkCol))
             .select(col("data.*"), from_unixtime(col(watermarkCol)).cast(TimestampType).as(watermarkCol))
             .withWatermark(watermarkCol, s"${this.topicsDelayPair.get(t).get} seconds")
         }
         case Some(df) => {
+          this.log.info("Watermark column is inside data, not part of kafka's schema")
+          this.log.info(s"Processing topic: ${t}, from brokers: ${this.kafkaBrokers}")
+          this.log.info(s"Watermark column is ${watermarkCol}")
+          this.log.info(s"Maximum delay for messages is ${this.topicsDelayPair.get(t).get} seconds")
           df
             .select(from_json(col("value").cast(StringType), schemaForTopic).as("data"))
             .select(
@@ -139,6 +147,7 @@ class PageViewsStream(spark: SparkSession, params: Params) extends StreamJob[Par
 
   @VisibleForTesting
   override protected[kafka] def transform(dataframes: Option[Map[String, DataFrame]]): DataFrame = {
+    this.log.info(s"Beginning transformation of input dataframes in ${classOf[PageViewsStream].getCanonicalName}")
     TransformationFactory.getTransformation(TransformationFactory.Top10ByGender, this.spark, params)
       .transformStream(dataframes) match {
       case None => throw new Exception("Error occurred while transforming stream, expected dataframe but None was found.")
@@ -148,6 +157,7 @@ class PageViewsStream(spark: SparkSession, params: Params) extends StreamJob[Par
 
   @VisibleForTesting
   override protected[kafka] def writeStream(dataFrame: Option[DataFrame]): Unit = {
+    this.log.info(s"Starting writing of transformed dataframes in ${classOf[PageViewsStream].getCanonicalName}")
     WriterFactory.getWriter(WriterFactory.KafkaWriter, this.spark, params).writer(
       dataFrame,
       TransformationFactory.getTransformation(TransformationFactory.NoOp, spark, params)
@@ -156,7 +166,9 @@ class PageViewsStream(spark: SparkSession, params: Params) extends StreamJob[Par
 
   @VisibleForTesting
   override protected[kafka] def finalizeJob(): Unit = {
+    this.log.info("Finalize step now standing by for termination of streaming job...")
     this.spark.streams.awaitAnyTermination()
+    this.log.info("Application ended, now stopping active spark context")
     this.spark.stop()
   }
 }

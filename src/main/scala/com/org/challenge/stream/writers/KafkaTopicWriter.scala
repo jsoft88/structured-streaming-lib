@@ -37,6 +37,7 @@ case class KafkaTopicWriter(spark: SparkSession, params: Params) extends {
             transformInstance.transformBatch(Some(batchDF)) match {
               case None => throw new Exception("An exception occurred while transforming batch dataframe")
               case Some(btdf) => {
+                this.log.info(s"Writer will proceed to apply final batch transformation in microbatch ID ${batchId}")
                 this.getFinalDF(btdf)
                   .write
                   .format("kafka")

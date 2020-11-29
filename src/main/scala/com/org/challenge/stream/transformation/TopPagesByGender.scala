@@ -67,7 +67,7 @@ case class TopPagesByGender(spark: SparkSession, params: Params) extends {
     dataframes match {
       case None => throw new IllegalArgumentException("Dataframe to transform is None")
       case Some(dfList) => {
-        println(s"---- List of DFS: ${dfList.keys.map(k => k).mkString(",")}")
+        this.log.info(s"---- List of DFS: ${dfList.keys.map(k => k).mkString(",")}")
 
         assert(dfList.keys.size == 2)
         assert(dfList.keySet.contains(TopPagesByGender.TopicUsers))
@@ -104,8 +104,9 @@ case class TopPagesByGender(spark: SparkSession, params: Params) extends {
 
   override def transformBatch(dataFrame: Option[DataFrame], otherDFs: DataFrame*): Option[DataFrame] = {
     dataFrame match {
-      case None => throw new IllegalArgumentException("Expected dataframe to transform in microbatch, but None found")
+      case None => this.log.error(s"Batch transform found an error in ${classOf[TopPagesByGender].getCanonicalName}"); throw new IllegalArgumentException("Expected dataframe to transform in microbatch, but None found")
       case Some(preparedDF) => {
+        this.log.info(s"Transforming batch in ${classOf[TopPagesByGender].getCanonicalName}")
         val windowSpecPageId = Window.orderBy(col("total_viewtime").desc)
         val distinctUserIds = preparedDF.agg(approx_count_distinct("userid").as("distinct_user_ids"))
 
@@ -129,13 +130,6 @@ case class TopPagesByGender(spark: SparkSession, params: Params) extends {
               col("total_viewtime")
             ).crossJoin(distinctUserIds)
         )
-//        Some(
-//          preparedDF
-//            .withColumn(
-//              "page_pos", row_number().over(windowSpecPageId)
-//            ).where(col("page_pos") <= functions.lit(this.params.topPagesNumber.getOrElse(this.DefaultNumberOfTopPages)))
-//            .select(to_avro(functions.struct(preparedDF.columns.map(col _): _*).alias("value")))
-//        )
       }
     }
   }

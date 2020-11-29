@@ -8,8 +8,8 @@ artifactName := { (sv: ScalaVersion, module: ModuleID, artifact: Artifact) =>
   artifact.name + "_" + sv.binary + "-2.4.6" + "_" + module.revision + "." + artifact.extension
 }
 
-libraryDependencies += "org.apache.spark" %% "spark-sql" % "2.4.6" % "provided"
-libraryDependencies += "org.apache.spark" %% "spark-sql-kafka-0-10" % "2.4.6" % "provided"
+libraryDependencies += "org.apache.spark" %% "spark-sql" % "2.4.6"
+libraryDependencies += "org.apache.spark" %% "spark-sql-kafka-0-10" % "2.4.6"
 libraryDependencies += "com.github.scopt" %% "scopt" % "3.7.0"
 libraryDependencies += "org.apache.spark" %% "spark-avro" % "2.4.6" % "provided"
 libraryDependencies += "io.circe" %% "circe-core" % "0.11.2"
@@ -26,3 +26,25 @@ libraryDependencies += "org.scalatestplus" %% "mockito-3-4" % "3.2.2.0" % "test"
 test in assembly := {}
 
 mainClass in assembly := Some("com.org.challenge.stream.AppLibrary")
+
+assemblyMergeStrategy in assembly := {
+  case x if Assembly.isConfigFile(x) =>
+    MergeStrategy.concat
+  case PathList(ps @ _*) if Assembly.isReadme(ps.last) || Assembly.isLicenseFile(ps.last) =>
+    MergeStrategy.rename
+  case PathList("META-INF", xs @ _*) =>
+    (xs map {_.toLowerCase}) match {
+      case ("manifest.mf" :: Nil) | ("index.list" :: Nil) | ("dependencies" :: Nil) =>
+        MergeStrategy.discard
+      case ps @ (x :: xs) if ps.last.endsWith(".sf") || ps.last.endsWith(".dsa") =>
+        MergeStrategy.discard
+      case "plexus" :: xs =>
+        MergeStrategy.discard
+      case "services" :: xs =>
+        MergeStrategy.filterDistinctLines
+      case ("spring.schemas" :: Nil) | ("spring.handlers" :: Nil) =>
+        MergeStrategy.filterDistinctLines
+      case _ => MergeStrategy.first
+    }
+  case _ => MergeStrategy.first
+}
