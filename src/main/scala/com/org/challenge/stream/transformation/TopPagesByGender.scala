@@ -4,7 +4,6 @@ import com.org.challenge.stream.config.Params
 import org.apache.spark.sql.{DataFrame, SparkSession, functions}
 import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.functions.{approx_count_distinct, col, expr, lit, row_number, sum, window}
-import org.apache.spark.sql.avro._
 
 object TopPagesByGender {
   val TopicUsers = "users"

@@ -1,12 +1,15 @@
 package com.org.challenge.stream.jobs.kafka
 
 import com.google.common.annotations.VisibleForTesting
-import com.org.challenge.stream.factory.{ReaderFactory, ReaderType, SchemaManagementFactory, TransformationFactory, WriterFactory}
+import com.org.challenge.stream.factory.{ReaderFactory, ReaderType, SchemaManagementFactory, TransformationFactory, TransformationType, WriterFactory, WriterType}
 import com.org.challenge.stream.config.{Params, ParamsBuilder}
 import com.org.challenge.stream.core.StreamJob
 import com.org.challenge.stream.readers.BaseReader
 import com.org.challenge.stream.schemas.SchemaManagement
+import com.org.challenge.stream.transformation.BaseTransform
 import com.org.challenge.stream.utils.Utils
+import com.org.challenge.stream.writers.BaseWriter
+import org.apache.commons.math3.transform.TransformType
 import org.apache.spark.sql.functions.{col, from_json, from_unixtime}
 import org.apache.spark.sql.types.{StringType, StructType, TimestampType}
 import org.apache.spark.sql.{DataFrame, SparkSession}
@@ -57,6 +60,7 @@ class PageViewsStream(spark: SparkSession, params: Params) extends StreamJob[Par
 
   @VisibleForTesting
   override protected[kafka] def setupJob(): Unit = {
+    this.log.info("Setting up Top Pages app")
     params.delayPerTopic match {
       case None => throw new IllegalArgumentException("Streaming from kafka requires topics to be present, but None found")
       case Some(topics) => this.topicsDelayPair = topics
@@ -103,8 +107,19 @@ class PageViewsStream(spark: SparkSession, params: Params) extends StreamJob[Par
   }
 
   @VisibleForTesting
+  private[kafka] def getTransformerFromFactory(transformType: TransformationType, transformParams: Params): BaseTransform = {
+    TransformationFactory.getTransformation(transformType, this.spark, params)
+  }
+
+  @VisibleForTesting
+  private[kafka] def getWriterFromFactory(writerType: WriterType, writerParams: Params): BaseWriter = {
+    WriterFactory.getWriter(writerType, this.spark, writerParams)
+  }
+
+  @VisibleForTesting
   override protected[kafka] def setupInputStream(): Option[Map[String, DataFrame]] = {
     // Iterate the different topics we obtained via CLI to load each dataframe.
+    this.log.info("Ready to acquire dataframe from topics")
     Some(this.topics.map(t => {
       val schemaForTopic = this.getSchemaByType(t)
       val watermarkCol = schemaForTopic.fields.filter(_.name.equals(this.topicEventField.get(t).head)) headOption match {
@@ -148,7 +163,7 @@ class PageViewsStream(spark: SparkSession, params: Params) extends StreamJob[Par
   @VisibleForTesting
   override protected[kafka] def transform(dataframes: Option[Map[String, DataFrame]]): DataFrame = {
     this.log.info(s"Beginning transformation of input dataframes in ${classOf[PageViewsStream].getCanonicalName}")
-    TransformationFactory.getTransformation(TransformationFactory.Top10ByGender, this.spark, params)
+    this.getTransformerFromFactory(TransformationFactory.Top10ByGender, params)
       .transformStream(dataframes) match {
       case None => throw new Exception("Error occurred while transforming stream, expected dataframe but None was found.")
       case Some(df) => df
@@ -158,16 +173,14 @@ class PageViewsStream(spark: SparkSession, params: Params) extends StreamJob[Par
   @VisibleForTesting
   override protected[kafka] def writeStream(dataFrame: Option[DataFrame]): Unit = {
     this.log.info(s"Starting writing of transformed dataframes in ${classOf[PageViewsStream].getCanonicalName}")
-    WriterFactory.getWriter(WriterFactory.KafkaWriter, this.spark, params).writer(
+    this.getWriterFromFactory(WriterFactory.KafkaWriter, params).writer(
       dataFrame,
-      TransformationFactory.getTransformation(TransformationFactory.NoOp, spark, params)
+      this.getTransformerFromFactory(TransformationFactory.Top10ByGender, params)
     ).start()
   }
 
   @VisibleForTesting
   override protected[kafka] def finalizeJob(): Unit = {
-    this.log.info("Finalize step now standing by for termination of streaming job...")
-    this.spark.streams.awaitAnyTermination()
     this.log.info("Application ended, now stopping active spark context")
     this.spark.stop()
   }

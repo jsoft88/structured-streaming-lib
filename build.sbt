@@ -11,7 +11,6 @@ artifactName := { (sv: ScalaVersion, module: ModuleID, artifact: Artifact) =>
 libraryDependencies += "org.apache.spark" %% "spark-sql" % "2.4.6"
 libraryDependencies += "org.apache.spark" %% "spark-sql-kafka-0-10" % "2.4.6"
 libraryDependencies += "com.github.scopt" %% "scopt" % "3.7.0"
-libraryDependencies += "org.apache.spark" %% "spark-avro" % "2.4.6" % "provided"
 libraryDependencies += "io.circe" %% "circe-core" % "0.11.2"
 libraryDependencies += "io.circe" %% "circe-generic" % "0.11.2"
 libraryDependencies += "io.circe" %% "circe-parser" % "0.11.2"

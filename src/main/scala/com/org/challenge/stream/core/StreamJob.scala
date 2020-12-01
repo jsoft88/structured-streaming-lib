@@ -44,6 +44,7 @@ abstract class StreamJob[P](spark: SparkSession, params: P) extends Logger {
    * Orchestration method for the StreamJob
    */
   final def runStreamJob(): Unit = {
+    var errOut = false
     try {
       this.setupJob()
       val inputDF = setupInputStream()
@@ -55,10 +56,12 @@ abstract class StreamJob[P](spark: SparkSession, params: P) extends Logger {
         case Some(df) => {
           val transformedDF = transform(Some(df))
           writeStream(Some(transformedDF))
+          this.log.info("Now standing by for termination of streaming job...")
+          this.spark.streams.awaitAnyTermination()
         }
       }
     } catch {
-      case ex => this.log.error(ex.getMessage)
+      case ex => this.log.error(s"FATAL ERR: ${ex.getMessage} --> ${ex.getStackTrace.mkString("\n")}")
     } finally {
       finalizeJob()
     }

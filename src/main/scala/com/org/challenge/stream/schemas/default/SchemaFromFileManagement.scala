@@ -1,7 +1,6 @@
 package com.org.challenge.stream.schemas.default
 
 import com.org.challenge.stream.schemas.{RegistryHandler, SchemaManagement}
-import com.org.challenge.stream.schemas.default.FileBasedSchemaModel
 import io.circe._
 import io.circe.parser._
 import io.circe.generic.auto._
