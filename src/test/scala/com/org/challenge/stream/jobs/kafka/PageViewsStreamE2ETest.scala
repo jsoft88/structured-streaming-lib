@@ -1,12 +1,10 @@
 package com.org.challenge.stream.jobs.kafka
 
 import com.org.challenge.stream.config.{Params, ParamsBuilder}
-import com.org.challenge.stream.factory.{ReaderFactory, ReaderType, SchemaManagementFactory, TransformationFactory, TransformationType, WriterFactory, WriterType}
+import com.org.challenge.stream.factory.{ReaderFactory, ReaderType, SchemaManagementFactory, TransformationType, WriterFactory, WriterType}
 import com.org.challenge.stream.helpers.{ConsoleWriter, FileReader, TestUtils}
-import com.org.challenge.stream.readers.KafkaTopicReader
 import com.org.challenge.stream.writers.BaseWriter
-import org.apache.spark.sql.{DataFrame, Row, SparkSession}
-import org.apache.spark.sql.streaming.DataStreamWriter
+import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.sql.types.StructType
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
@@ -97,7 +95,17 @@ class PageViewsStreamE2ETest extends AnyFunSuite with BeforeAndAfterAll {
 
     pageViewsStreamSpy.runStreamJob()
 
+    Mockito.verify[PageViewsStream](pageViewsStreamSpy, Mockito.times(1)).setupJob()
+    Mockito.verify[PageViewsStream](pageViewsStreamSpy, Mockito.times(2))
+      .getTransformerFromFactory(ArgumentMatchers.any[TransformationType](), ArgumentMatchers.any[Params]())
+    Mockito.verify[PageViewsStream](pageViewsStreamSpy, Mockito.times(1)).setupInputStream()
+    Mockito.verify[PageViewsStream](pageViewsStreamSpy, Mockito.times(1))
+      .transform(ArgumentMatchers.any[Option[Map[String,DataFrame]]]())
+    Mockito.verify[PageViewsStream](pageViewsStreamSpy, Mockito.times(1))
+      .writeStream(ArgumentMatchers.any[Option[DataFrame]]())
+    Mockito.verify[PageViewsStream](pageViewsStreamSpy, Mockito.times(1))
+      .invokeWait()
+
     assert(this.sparkSession.sql("SELECT * FROM global_temp.e2e_top_pages").schema.fields.map(_.name).length == 4)
-    //assert(this.sparkSession.sql("SELECT * FROM global_temp.e2e_top_pages").count() == 4)
   }
 }

@@ -180,6 +180,9 @@ class PageViewsStream(spark: SparkSession, params: Params) extends StreamJob[Par
   }
 
   @VisibleForTesting
+  override protected[kafka] def invokeWait(args: Any*): Unit = this.spark.streams.awaitAnyTermination()
+
+  @VisibleForTesting
   override protected[kafka] def finalizeJob(): Unit = {
     this.log.info("Application ended, now stopping active spark context")
     this.spark.stop()

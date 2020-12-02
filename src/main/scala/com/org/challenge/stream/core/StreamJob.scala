@@ -40,13 +40,15 @@ abstract class StreamJob[P](spark: SparkSession, params: P) extends Logger {
    */
   protected def finalizeJob(): Unit
 
+  protected def invokeWait(args: Any*): Unit
+
   /**
    * Orchestration method for the StreamJob
    */
   final def runStreamJob(): Unit = {
-    var errOut = false
     try {
       this.setupJob()
+      this.log.info("Job setup ready, now proceeding to read from source")
       val inputDF = setupInputStream()
       inputDF match {
         case None => {
@@ -54,10 +56,14 @@ abstract class StreamJob[P](spark: SparkSession, params: P) extends Logger {
           throw new RuntimeException("Input stream was None")
         }
         case Some(df) => {
+          this.log.info("Now starting transformation of input dataframes...")
           val transformedDF = transform(Some(df))
+
+          this.log.info("Transformation ready, invoking writer...")
           writeStream(Some(transformedDF))
           this.log.info("Now standing by for termination of streaming job...")
-          this.spark.streams.awaitAnyTermination()
+          this.invokeWait()
+          this.log.info("Job completed successfully, proceeding termination...")
         }
       }
     } catch {
