@@ -11,7 +11,7 @@ object SchemaManagementFactory {
   }
 
   val AllManagementTypes = Seq(
-    SchemaFromFileManagement.toString
+    SchemaFromFileManagement
   )
 
   def getSchemaManagementInstance(schemaManagementType: SchemaManagementType, schemaRegistryHandler: Option[RegistryHandler]): SchemaManagement = {
