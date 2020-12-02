@@ -1,0 +1,21 @@
+{
+  "topic": "users",
+[
+    {
+      "name": "registertime",
+      "type": "BIGINT"
+    },
+    {
+      "name": "userid",
+      "type": "STRING"
+    },
+    {
+      "name": "regionid",
+      "type": "STRING"
+    },
+    {
+      "name": "gender",
+      "type": "STRING"
+    }
+  ]
+}

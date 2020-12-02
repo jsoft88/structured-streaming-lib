@@ -16,11 +16,15 @@ class SchemaFromFileManagement(registryHandler: RegistryHandler) extends SchemaM
         None,
         Some(Map(FileSchemaRegistry.ArgSchemaId -> schemaIdentifier))
       )
-      val schemaAsJson = parse(registryResponse.responsePayload.asInstanceOf[String]) match {
-        case Left(e) => throw new Exception(e.message)
-        case Right(jObject) => jObject
+      val schemaAsJson = registryResponse.responsePayload match {
+        case None => throw new Exception("Schema registry responded None")
+        case Some(res) => {
+          parse(res.asInstanceOf[String]) match {
+            case Left(e) => throw new Exception(e.message)
+            case Right(jObject) => jObject
+          }
+        }
       }
-
       schemaAsJson.as[FileBasedSchemaModel] match {
         case Right(schema) => StructType(schema.fields.foldRight(Seq[StructField]())((fl, f) => f ++ Seq(StructField(fl.name, fl.getSQLType(), true))))
         case Left(err) => throw err
