@@ -8,7 +8,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.funsuite.AnyFunSuite
 
 class PageViewsStreamTest extends AnyFunSuite with BeforeAndAfterAll {
-  var sparkSession = SparkSession.builder().master("local[*]").appName("testpageviewsstream").getOrCreate()
+  var sparkSession:SparkSession = _
 
   test("Reader from factory produces two dataframes hashed by topics") {
     val appParams = new ParamsBuilder()
@@ -28,7 +28,6 @@ class PageViewsStreamTest extends AnyFunSuite with BeforeAndAfterAll {
 
     assert(readDataframes.get.keys.size == 2)
 
-    var pageViewsForAsserts = this.sparkSession.emptyDataFrame
     readDataframes
       .get
       .get("pageviews")
@@ -36,10 +35,9 @@ class PageViewsStreamTest extends AnyFunSuite with BeforeAndAfterAll {
       .writeStream
       .outputMode(OutputMode.Append())
       .trigger(Trigger.Once())
-      .foreachBatch((batchDF: DataFrame, batchId: Long) => pageViewsForAsserts = batchDF.as("df1"))
+      .foreachBatch((batchDF: DataFrame, batchId: Long) => batchDF.createOrReplaceGlobalTempView("pageviews_assert"))
       .start()
 
-    var usersForAsserts = this.sparkSession.emptyDataFrame
     readDataframes
       .get
       .get("users")
@@ -47,15 +45,17 @@ class PageViewsStreamTest extends AnyFunSuite with BeforeAndAfterAll {
       .writeStream
       .outputMode(OutputMode.Append())
       .trigger(Trigger.Once())
-      .foreachBatch((batchDF: DataFrame, batchId: Long) => usersForAsserts = batchDF.as("df2"))
+      .foreachBatch((batchDF: DataFrame, batchId: Long) => batchDF.createOrReplaceGlobalTempView("users_assert"))
       .start()
 
     this.sparkSession.streams.awaitAnyTermination()
 
-    pageViewsForAsserts.show(20, false)
-    usersForAsserts.show(20, false)
-    assert(pageViewsForAsserts.count() == 18)
-    assert(usersForAsserts.count() == 5)
+    this.sparkSession.sql("SELECT * FROM global_temp.pageviews_assert").show(20, false)
+    this.sparkSession.sql("SELECT * FROM global_temp.users_assert").show(20, false)
+    assert(this.sparkSession.sql("SELECT * FROM global_temp.pageviews_assert").count() == 18)
+    assert(this.sparkSession.sql("SELECT * FROM global_temp.users_assert").count() == 5)
+
+    this.sparkSession.streams.resetTerminated()
   }
 
   test("when watermark column is part of data, timestamp is excluded") {
@@ -77,7 +77,6 @@ class PageViewsStreamTest extends AnyFunSuite with BeforeAndAfterAll {
 
     assert(readDataframes.get.keys.size == 2)
 
-    var pageViewsForAsserts = this.sparkSession.emptyDataFrame
     readDataframes
       .get
       .get("pageviews")
@@ -85,25 +84,20 @@ class PageViewsStreamTest extends AnyFunSuite with BeforeAndAfterAll {
       .writeStream
       .outputMode(OutputMode.Append())
       .trigger(Trigger.Once())
-      .foreachBatch((batchDF: DataFrame, batchId: Long) => pageViewsForAsserts = batchDF.as("df1"))
-      .start()
-
-    var usersForAsserts = this.sparkSession.emptyDataFrame
-    readDataframes
-      .get
-      .get("users")
-      .head
-      .writeStream
-      .outputMode(OutputMode.Append())
-      .trigger(Trigger.Once())
-      .foreachBatch((batchDF: DataFrame, batchId: Long) => usersForAsserts = batchDF.as("df2"))
+      .foreachBatch((batchDF: DataFrame, batchId: Long) =>{
+        batchDF.createOrReplaceGlobalTempView("pageviews_assert2")
+      })
       .start()
 
     this.sparkSession.streams.awaitAnyTermination()
-    assert(pageViewsForAsserts.schema.fields.filter(_.name.equals("timestamp")).isEmpty)
+    assert(this.sparkSession.sql("SELECT * FROM global_temp.pageviews_assert2").schema.fields.filter(_.name.equals("timestamp")).isEmpty)
+    this.sparkSession.streams.resetTerminated()
   }
 
-  override protected def beforeAll(): Unit = super.beforeAll()
+  override protected def beforeAll(): Unit = {
+    this.sparkSession = SparkSession.builder().master("local[*]").appName("testpageviewsstream").getOrCreate()
+    super.beforeAll()
+  }
 
-  override protected def afterAll(): Unit = this.sparkSession.sparkContext.stop(); super.afterAll()
+  override protected def afterAll(): Unit = this.sparkSession.stop(); super.afterAll()
 }

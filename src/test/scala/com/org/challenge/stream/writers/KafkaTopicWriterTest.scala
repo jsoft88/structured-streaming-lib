@@ -14,7 +14,8 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.funsuite.AnyFunSuite
 
 class KafkaTopicWriterTest extends AnyFunSuite with BeforeAndAfterAll {
-  private var sparkSession = SparkSession.builder().master("local[*]").appName("testOuput").getOrCreate()
+  private var sparkSession:SparkSession = _
+
   test("final dataframe contains only key and value as column") {
     val appParams = new ParamsBuilder()
       .withReaderType(ReaderFactory.KafkaReader.toString)
@@ -77,7 +78,10 @@ class KafkaTopicWriterTest extends AnyFunSuite with BeforeAndAfterAll {
     assert(this.sparkSession.sql("SELECT * FROM global_temp.kafka_ready").count() == 4)
   }
 
-  override protected def beforeAll(): Unit = super.beforeAll()
+  override protected def beforeAll(): Unit = {
+    this.sparkSession = SparkSession.builder().master("local[*]").appName("testOuput").getOrCreate()
+    super.beforeAll()
+  }
 
   override protected def afterAll(): Unit = this.sparkSession.sparkContext.stop(); super.afterAll()
 }

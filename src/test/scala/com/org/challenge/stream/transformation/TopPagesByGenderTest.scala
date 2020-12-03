@@ -113,6 +113,7 @@ class TopPagesByGenderTest extends AnyFunSuite with BeforeAndAfterAll {
       .start()
 
     this.sparkSession.streams.awaitAnyTermination()
+    this.sparkSession.streams.resetTerminated()
     val finalDF = this.sparkSession.sql("SELECT * FROM global_temp.top_pages_gender_final")
     finalDF.show()
 
