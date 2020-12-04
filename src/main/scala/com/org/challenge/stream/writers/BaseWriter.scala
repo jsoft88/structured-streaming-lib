@@ -7,6 +7,8 @@ import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import org.apache.spark.sql.streaming.DataStreamWriter
 
 abstract class BaseWriter(spark: SparkSession, params: Params) extends Logger {
+  this.setupWriter()
+
   def setupWriter(): Unit
 
   def writer(dataframe: Option[DataFrame], transformInstance: BaseTransform): DataStreamWriter[Row]

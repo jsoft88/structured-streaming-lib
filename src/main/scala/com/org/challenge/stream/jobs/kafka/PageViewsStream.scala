@@ -9,7 +9,7 @@ import com.org.challenge.stream.schemas.SchemaManagement
 import com.org.challenge.stream.transformation.BaseTransform
 import com.org.challenge.stream.utils.Utils
 import com.org.challenge.stream.writers.BaseWriter
-import org.apache.spark.sql.functions.{col, from_json, from_unixtime}
+import org.apache.spark.sql.functions.{col, from_json, from_unixtime, lit}
 import org.apache.spark.sql.types.{LongType, StringType, StructType, TimestampType}
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
@@ -137,7 +137,7 @@ class PageViewsStream(spark: SparkSession, params: Params) extends StreamJob[Par
           this.log.info(s"Maximum delay for messages is ${this.topicsDelayPair.get(t).get} seconds")
           df
             .select(from_json(col("value").cast(StringType), schemaForTopic).as("data"), col(watermarkCol).cast(LongType))
-            .select(col("data.*"), from_unixtime(col(watermarkCol)).cast(TimestampType).as(watermarkCol))
+            .select(col("data.*"), from_unixtime(col(watermarkCol).divide(lit(1000L))).cast(TimestampType).as(watermarkCol))
             .withWatermark(watermarkCol, s"${this.topicsDelayPair.get(t).get} seconds")
         }
         case Some(df) => {

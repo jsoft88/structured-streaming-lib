@@ -76,6 +76,7 @@ case class TopPagesByGender(spark: SparkSession, params: Params) extends {
         val pageviewsDF = dfList.get(TopPagesByGender.TopicPageViews).head.alias("pv")
 
         val usersDFDelay = this.delayPerTopic.get(TopPagesByGender.TopicUsers).head
+        val pageviewsDFDelay = this.delayPerTopic.get(TopPagesByGender.TopicPageViews).head
         val eventTimePV = this.eventTimeFieldPerTopic.get(TopPagesByGender.TopicPageViews).head
         val eventTimeU = this.eventTimeFieldPerTopic.get(TopPagesByGender.TopicUsers).head
 
@@ -85,8 +86,8 @@ case class TopPagesByGender(spark: SparkSession, params: Params) extends {
               expr(
                 s"""
                   |pv.userid = u.userid AND
-                  |pv.${eventTimePV} >= u.${eventTimeU} AND
-                  |pv.${eventTimePV} <= u.${eventTimeU} + interval ${usersDFDelay} seconds
+                  |u.${eventTimeU} >= pv.${eventTimePV} AND
+                  |u.${eventTimeU} <= pv.${eventTimePV} + interval ${pageviewsDFDelay} seconds
                   |""".stripMargin)
             )
             .select(

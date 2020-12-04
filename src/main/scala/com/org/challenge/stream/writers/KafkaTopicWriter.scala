@@ -7,6 +7,7 @@ import com.org.challenge.stream.config.Params
 import com.org.challenge.stream.transformation.BaseTransform
 import org.apache.spark.sql.{DataFrame, Row, SparkSession, functions}
 import org.apache.spark.sql.streaming.{DataStreamWriter, OutputMode, Trigger}
+import org.apache.spark.sql.types.StringType
 
 case class KafkaTopicWriter(spark: SparkSession, params: Params) extends {
   private var writeInterval: Long = 0
@@ -18,7 +19,7 @@ case class KafkaTopicWriter(spark: SparkSession, params: Params) extends {
   private[writers] def getFinalDF(dataframe: DataFrame): DataFrame = {
     val columns = dataframe.schema.fields.map(f => functions.col(f.name))
     dataframe
-      .withColumn("key", functions.lit(System.currentTimeMillis()))
+      .withColumn("key", functions.lit(System.currentTimeMillis()).cast(StringType))
       .withColumn("value", functions.to_json(functions.struct(columns: _*)))
       .select(functions.col("key"),functions.col("value"))
   }
@@ -29,16 +30,17 @@ case class KafkaTopicWriter(spark: SparkSession, params: Params) extends {
       case Some(df) => {
         df
           .writeStream
-          .format("kafka")
-          .option("kafka.bootstrap.servers", this.kafkaBrokers)
-          .option("topic", this.outputTopic)
           .outputMode(OutputMode.Append)
           .foreachBatch((batchDF: DataFrame, batchId: Long) => {
             transformInstance.transformBatch(Some(batchDF)) match {
               case None => throw new Exception("An exception occurred while transforming batch dataframe")
               case Some(btdf) => {
+                btdf.alias("bfdf").show(10, false)
                 this.log.info(s"Writer will proceed to apply final batch transformation in microbatch ID ${batchId}")
-                this.getFinalDF(btdf)
+                this.log.info(s"Ouput topic --> ${this.outputTopic} in broker ${this.kafkaBrokers}")
+                val fdf = this.getFinalDF(btdf)
+                fdf.alias("to_show").show(10, false)
+                fdf
                   .write
                   .format("kafka")
                   .option("kafka.bootstrap.servers", this.kafkaBrokers)
@@ -63,6 +65,6 @@ case class KafkaTopicWriter(spark: SparkSession, params: Params) extends {
       case Some(kb) => this.kafkaBrokers = kb
     }
 
-    this.writeInterval = writeInterval
+    this.writeInterval = this.params.writeInterval
   }
 }
