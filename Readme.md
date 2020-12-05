@@ -179,6 +179,61 @@ It takes the following arguments:
 * --transform-type: One of: top10ByGender, noOp. Default is top10ByGender.
 * --top-pages: number of pages to choose for each gender.
 * --application: Enter the name of the application to run. For the challenge: challenge
+* --schema-manager: Which schema manager will be used to resolve schema from input data. Available `file-based`, which means
+expected schemas to exist in json format under `resources/`.
+
+## Schemas
+As it can be seen from the last line in the itemization above, the final parameter
+is which schema manager will be used by the library to resolve schemas of input data. There
+is currently only one schema manager which is `file-based`. This schema manager uses the 
+`resources/` directory as schema registry. In there, you can already find two files which are
+relevant for the use case in this library, that is, `pageviews.json` and `users.json`. The format is
+a json object, with very simple structure as you can see below:
+
+```json
+{
+  "topic": "users",
+  "fields": [
+    {
+      "name": "registertime",
+      "type": "LONG"
+    },
+    {
+      "name": "userid",
+      "type": "STRING"
+    },
+    {
+      "name": "regionid",
+      "type": "STRING"
+    },
+    {
+      "name": "gender",
+      "type": "STRING"
+    }
+  ]
+}
+```
+
+The values for the `type` key, are defined as *Predefined Domain Types*, which can be found
+in the class `com.org.challenge.stream.schemas.types.PredefinedDomainTypes`.
+It was also introduced the concept of type *Augmenters* which can be seen as a way
+of augmenting the capabilities of the standard `StructType` to be used
+as avro schemas for example. Actually, currently it is possible to use the class
+in `com.org.challenge.stream.schemas.augmenters.SchemaToAvro` to parse data coming in
+avro serialization format.
+
+Also the schema management system included, introduced the capability to use
+type mappers in `com.org.challenge.stream.schemas.types.TypeMapper`, which is a trait
+containing methods to map from/to *Predefined Domain Types* to avro/sql types.
+
+The core functionality of schemas are based on the following three classes:
+* `com.org.challenge.stream.schemas.RegistryHandler`: implementations of this trait know
+how to interact with the underlying schema registry, it know how to authenticate, query it, etc.
+* `com.org.challenge.stream.schemas.SchemaManagement`: base class for abstracting the low level
+implementation of the RegistryHandler by returning an schema of `StructType` for a given identifier.
+* `com.org.challenge.stream.schemas.SchemaModel`: a class which represents the schema retrieved from
+the registry, later converted to `StructType` (which can be augmented) but also
+allows to go from `StructType` back to the class extending `SchemaModel`
 
 ## Build and Execution
 Build -> `sbt package`
