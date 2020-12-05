@@ -3,7 +3,7 @@
   "fields": [
     {
       "name": "registertime",
-      "type": "BIGINT"
+      "type": "LONG"
     },
     {
       "name": "userid",

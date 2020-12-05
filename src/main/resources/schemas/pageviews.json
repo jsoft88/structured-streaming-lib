@@ -3,7 +3,7 @@
   "fields": [
     {
       "name": "viewtime",
-      "type": "BIGINT"
+      "type": "LONG"
     },
     {
       "name": "userid",

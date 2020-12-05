@@ -1,5 +1,6 @@
 package com.org.challenge.stream.schemas.default
 
+import com.org.challenge.stream.factory.SchemaManagementFactory
 import org.scalatest.funsuite.AnyFunSuite
 
 class SchemaFromFileManagementTest extends AnyFunSuite {
@@ -21,5 +22,16 @@ class SchemaFromFileManagementTest extends AnyFunSuite {
     assertThrows[Exception]{
       val schemaUsers = new SchemaFromFileManagement(new FileSchemaRegistryHandler()).getSchemaFromRegistry("failed_schema")
     }
+  }
+
+  test("from StructType a correct file based model is generated") {
+    val schemaUsers = new SchemaFromFileManagement(new FileSchemaRegistryHandler()).getSchemaFromRegistry("users")
+    val fm = SchemaManagementFactory
+      .getSchemaManagementInstance(SchemaManagementFactory.SchemaFromFileManagement, Some(new FileSchemaRegistryHandler()))
+      .asInstanceOf[SchemaFromFileManagement]
+      .fromStructToModel("users", schemaUsers)
+
+    assert(fm.topic.equals("users"))
+    fm.fields.foreach(f => assert(schemaUsers.fields.filter(_.name.equals(f.name)).headOption != None))
   }
 }
