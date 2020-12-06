@@ -177,10 +177,12 @@ It takes the following arguments:
 * --reader-type: One of: kafka. Default is kafka.
 * --writer-type: One of: Kafka. Default is kafka.
 * --transform-type: One of: top10ByGender, noOp. Default is top10ByGender.
-* --top-pages: number of pages to choose for each gender.
+* --top-pages: Number of pages to choose for each gender.
 * --application: Enter the name of the application to run. For the challenge: challenge
 * --schema-manager: Which schema manager will be used to resolve schema from input data. Available `file-based`, which means
 expected schemas to exist in json format under `resources/`.
+* --kafka-input-serialization: Use one of `json`, `avro` to tell the engine the kind of serialization
+is applied at the source.
 
 ## Schemas
 As it can be seen from the last line in the itemization above, the final parameter
@@ -238,7 +240,12 @@ allows to go from `StructType` back to the class extending `SchemaModel`
 ## Build and Execution
 Build -> `sbt package`
 
-Execute with challenge specs -> `/bin/spark-submit --class com.org.challenge.stream.AppLibrary --master local[*] --packages org.apache.spark:spark-sql-kafka-0-10_2.11:2.4.0 --packages org.apache.spark:spark-avro_2.11:2.4.0 --packages com.github.scopt:scopt_2.11:3.7.0 /tmp/streaming-lib_2.12-2.4.6_0.1.jar --kafka-brokers localhost:9092 --input-topics pageviews,users --topic-watermark-pair pageviews=timestamp,users=timestamp --topic-delay-pair pageviews=20,users=20 --output-topic top_pages --window-duration-seconds 60 --sliding-window-seconds 30 --write-interval-seconds 60 --reader-type kafka --writer-type kafka --transform-type top10ByGender --top-pages 10 --application challenge --topic-schematype-pair pageviews=pageviews,users=users`
+Execute with challenge specs -> ~~/bin/spark-submit --class com.org.challenge.stream.AppLibrary --master local[*] --packages org.apache.spark:spark-sql-kafka-0-10_2.11:2.4.0 --packages org.apache.spark:spark-avro_2.11:2.4.0 --packages com.github.scopt:scopt_2.11:3.7.0 /tmp/streaming-lib_2.12-2.4.6_0.1.jar --kafka-brokers localhost:9092 --input-topics pageviews,users --topic-watermark-pair pageviews=timestamp,users=timestamp --topic-delay-pair pageviews=20,users=20 --output-topic top_pages --window-duration-seconds 60 --sliding-window-seconds 30 --write-interval-seconds 60 --reader-type kafka --writer-type kafka --transform-type top10ByGender --top-pages 10 --application challenge --topic-schematype-pair pageviews=pageviews,users=users~~
+
+Now it is not longer required to include dependencies like this, since `assembly` plugin has been included, which generates a fat jar.
+Keep in mind the packaging process can take several minutes to complete.
+
+The new execution looks like this: `spark-submit --master local[*] --class com.org.challenge.stream.AppLibrary /path/to/jars/streaming-lib-assembly-0.1.jar --schema-manager file-based --kafka-brokers broker:9092 --input-topics pageviews,users --topic-watermark-pair pageviews=timestamp,users=timestamp --topic-delay-pair pageviews=50,users=10 --output-topic top_pages --window-duration-seconds 10 --sliding-window-seconds 5 --write-interval-seconds 60 --reader-type kafka --writer-type kafka --transform-type top10ByGender --top-pages 10 --application challenge --topic-schematype-pair pageviews=pageviews,users=users --kafka-input-serialization json` 
 
 Make sure to check the path to jar
 
