@@ -6,14 +6,14 @@
    package com.org.challenge.stream.core
    
    import com.org.challenge.stream.utils.Logger
-   import org.apache.spark.sql.DataFrame
+   import org.apache.spark.sql.{DataFrame, SparkSession}
    
    /**
     * Base abstraction for streaming jobs.
     * @param params parameters passed to the streaming job
     * @tparam P type of the parameters passed to the streaming job
     */
-   abstract class StreamJob[P](params: P) extends Logger {
+   abstract class StreamJob[P](spark: SparkSession, params: P) extends Logger {
      /**
       * Perform any initializations required by the job, possibly by accessing the params object.
       */
@@ -45,12 +45,15 @@
       */
      protected def finalizeJob(): Unit
    
+     protected def invokeWait(args: Any*): Unit
+   
      /**
       * Orchestration method for the StreamJob
       */
      final def runStreamJob(): Unit = {
        try {
          this.setupJob()
+         this.log.info("Job setup ready, now proceeding to read from source")
          val inputDF = setupInputStream()
          inputDF match {
            case None => {
@@ -58,17 +61,24 @@
              throw new RuntimeException("Input stream was None")
            }
            case Some(df) => {
+             this.log.info("Now starting transformation of input dataframes...")
              val transformedDF = transform(Some(df))
+   
+             this.log.info("Transformation ready, invoking writer...")
              writeStream(Some(transformedDF))
+             this.log.info("Now standing by for termination of streaming job...")
+             this.invokeWait()
+             this.log.info("Job completed successfully, proceeding termination...")
            }
          }
        } catch {
-         case ex => this.log.error(ex.getMessage)
+         case ex => this.log.error(s"FATAL ERR: ${ex.getMessage} --> ${ex.getStackTrace.mkString("\n")}")
        } finally {
          finalizeJob()
        }
      }
    }
+
 
 ```
 The idea is to have different stakeholder requirements added to the framework,
@@ -183,6 +193,8 @@ It takes the following arguments:
 expected schemas to exist in json format under `resources/`.
 * --kafka-input-serialization: Use one of `json`, `avro` to tell the engine the kind of serialization
 is applied at the source.
+* --kafka-writer-serialization: Use one of `json`, `avro` to tell the engine the kind of serialization
+is applied when generating output dataframe.
 
 ## Schemas
 As it can be seen from the last line in the itemization above, the final parameter
@@ -245,7 +257,7 @@ Execute with challenge specs -> ~~/bin/spark-submit --class com.org.challenge.st
 Now it is not longer required to include dependencies like this, since `assembly` plugin has been included, which generates a fat jar.
 Keep in mind the packaging process can take several minutes to complete.
 
-The new execution looks like this: `spark-submit --master local[*] --class com.org.challenge.stream.AppLibrary /path/to/jars/streaming-lib-assembly-0.1.jar --schema-manager file-based --kafka-brokers broker:9092 --input-topics pageviews,users --topic-watermark-pair pageviews=timestamp,users=timestamp --topic-delay-pair pageviews=50,users=10 --output-topic top_pages --window-duration-seconds 10 --sliding-window-seconds 5 --write-interval-seconds 60 --reader-type kafka --writer-type kafka --transform-type top10ByGender --top-pages 10 --application challenge --topic-schematype-pair pageviews=pageviews,users=users --kafka-input-serialization json` 
+The new execution looks like this: `spark-submit --master local[*] --class com.org.challenge.stream.AppLibrary /path/to/jars/streaming-lib-assembly-0.1.jar --schema-manager file-based --kafka-brokers broker:9092 --input-topics pageviews,users --topic-watermark-pair pageviews=timestamp,users=timestamp --topic-delay-pair pageviews=50,users=10 --output-topic top_pages --window-duration-seconds 10 --sliding-window-seconds 5 --write-interval-seconds 60 --reader-type kafka --writer-type kafka --transform-type top10ByGender --top-pages 10 --application challenge --topic-schematype-pair pageviews=pageviews,users=users --kafka-input-serialization json --kafka-writer-serialization json` 
 
 Make sure to check the path to jar
 
