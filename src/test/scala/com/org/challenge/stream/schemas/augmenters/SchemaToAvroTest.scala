@@ -13,7 +13,8 @@ class SchemaToAvroTest extends AnyFunSuite {
     val schemaAsStruct = schemaFromFileManagement.getSchemaFromRegistry("users")
 
     // Augment with avro schema
-    val avroAugmenter = SchemaToAvro().fromModelToB(schemaFromFileManagement.fromStructToModel("users", schemaAsStruct))
+    val avroAugmenter = SchemaToAvro().fromModelToB("users", schemaAsStruct)
+    println(avroAugmenter.toString(true))
     assert(avroAugmenter.getName.equals("users"))
     schemaAsStruct.fields.foreach(f => {
       assert(avroAugmenter.getField(f.name) != null)

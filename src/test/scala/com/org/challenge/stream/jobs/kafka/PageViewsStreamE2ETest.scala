@@ -38,6 +38,7 @@ class PageViewsStreamE2ETest extends AnyFunSuite with BeforeAndAfterAll {
       .withTopPagesNumber(4)
       .withOutputTopic("output_topic")
       .withSchemaManager("dummy")//required for input stream scaffolding, not for transformation itself
+      .withKafaInputSerialization(Some(KafkaSerialization.JsonSerialization.toString))
       .build()
 
     // update timestamps for watermarks to be valid

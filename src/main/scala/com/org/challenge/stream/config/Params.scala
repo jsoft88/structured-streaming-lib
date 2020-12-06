@@ -5,6 +5,7 @@ import com.org.challenge.stream.AppLibrary
 import com.org.challenge.stream.factory.ReaderFactory.KafkaReader
 import com.org.challenge.stream.factory.TransformationFactory.Top10ByGender
 import com.org.challenge.stream.factory.WriterFactory.KafkaWriter
+import com.org.challenge.stream.jobs.kafka.KafkaSerialization
 
 class ParamsBuilder {
   var kafkaBrokers: Option[String] = None
@@ -23,6 +24,12 @@ class ParamsBuilder {
   var launchApp: Option[String] = None
   var schemaManager: Option[String] = None
   var transformationConfigPath: Option[String] = None
+  var kafkaInputSerialization: Option[String] = None
+
+  def withKafaInputSerialization(kafkaSerialization: Option[String]): ParamsBuilder = {
+    this.kafkaInputSerialization = kafkaSerialization
+    this
+  }
 
   def withTransformationConfigPath(transformationConfigPath: String): ParamsBuilder = {
     this.transformationConfigPath = Some(transformationConfigPath)
@@ -131,6 +138,7 @@ class ParamsBuilder {
     instance.launchApp = this.launchApp
     instance.schemaManager = this.schemaManager
     instance.transformationConfigPath = this.transformationConfigPath
+    instance.kafkaInputSerialization = this.kafkaInputSerialization
 
     instance
   }
@@ -153,6 +161,7 @@ final class Params {
   var launchApp: Option[String] = None
   var schemaManager: Option[String] = None
   var transformationConfigPath: Option[String] = None
+  var kafkaInputSerialization: Option[String] = None
 }
 
 class CLIParams {
@@ -230,6 +239,11 @@ class CLIParams {
       opt[String](name = "schema-manager")
         .action((value, c) => c.withSchemaManager(value))
         .text(s"Enter one of the following: ${SchemaManagementFactory.AllManagementTypes.map(t => t).mkString(",")}")
+
+      opt[String](name = "kafka-input-serialization")
+        .action((value, c) => c.withKafaInputSerialization(Some(value)))
+        .text(s"""Enter one of the following: ${KafkaSerialization.AllSerializations.map(_.toString).mkString(",")}""")
+        .withFallback(KafkaSerialization.JsonSerialization.toString)
     }
 
     parser.parse(args, new ParamsBuilder()) match {

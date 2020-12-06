@@ -3,7 +3,7 @@ package com.org.challenge.stream.writers
 import com.org.challenge.stream.config.ParamsBuilder
 import com.org.challenge.stream.factory.ReaderFactory
 import com.org.challenge.stream.helpers.TestUtils
-import com.org.challenge.stream.jobs.kafka.InputDataframeScaffolding
+import com.org.challenge.stream.jobs.kafka.{InputDataframeScaffolding, KafkaSerialization}
 import com.org.challenge.stream.transformation.TopPagesByGender
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import org.apache.spark.sql.streaming.{DataStreamWriter, OutputMode, Trigger}
@@ -32,6 +32,7 @@ class KafkaTopicWriterTest extends AnyFunSuite with BeforeAndAfterAll {
       .withTopPagesNumber(4)
       .withOutputTopic("output_topic")
       .withSchemaManager("dummy")//required for input stream scaffolding, not for transformation itself
+      .withKafaInputSerialization(Some(KafkaSerialization.JsonSerialization.toString))
       .build()
 
     // update timestamps for watermarks to be valid

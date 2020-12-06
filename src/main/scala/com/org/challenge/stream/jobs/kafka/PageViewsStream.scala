@@ -6,12 +6,13 @@ import com.org.challenge.stream.config.{Params, ParamsBuilder}
 import com.org.challenge.stream.core.StreamJob
 import com.org.challenge.stream.readers.BaseReader
 import com.org.challenge.stream.schemas.SchemaManagement
+import com.org.challenge.stream.schemas.augmenters.SchemaToAvro
 import com.org.challenge.stream.transformation.BaseTransform
 import com.org.challenge.stream.utils.Utils
 import com.org.challenge.stream.writers.BaseWriter
 import org.apache.spark.sql.functions.{col, from_json, from_unixtime, lit}
 import org.apache.spark.sql.types.{LongType, StringType, StructType, TimestampType}
-import org.apache.spark.sql.{DataFrame, SparkSession}
+import org.apache.spark.sql.{DataFrame, SparkSession, avro}
 
 sealed trait SchemaType {
   def getDefaultWatermarkColName(): String
@@ -42,6 +43,7 @@ class PageViewsStream(spark: SparkSession, params: Params) extends StreamJob[Par
   var topics: Seq[String] = Seq.empty
   var schemaManagement: SchemaManagement = _
   val utils: Utils = new Utils()
+  var kafkaInputSerialization: KafkaSerialization = _
 
 
   @VisibleForTesting
@@ -97,6 +99,10 @@ class PageViewsStream(spark: SparkSession, params: Params) extends StreamJob[Par
       case None => throw new IllegalArgumentException("Expected schema manager type to be present but None provided")
       case Some(sm) => this.schemaManagement = this.getSchemaManagementInstance(sm)
     }
+
+    this.kafkaInputSerialization = KafkaSerialization.getKafkaSerialization(
+      params.kafkaInputSerialization.getOrElse(KafkaSerialization.JsonSerialization).toString
+    )
   }
 
   @VisibleForTesting
@@ -119,6 +125,8 @@ class PageViewsStream(spark: SparkSession, params: Params) extends StreamJob[Par
   override protected[kafka] def setupInputStream(): Option[Map[String, DataFrame]] = {
     // Iterate the different topics we obtained via CLI to load each dataframe.
     this.log.info("Ready to acquire dataframe from topics")
+    this.log.info(s"Kafka input serialization is set to: ${this.kafkaInputSerialization.toString}")
+
     Some(this.topics.map(t => {
       val schemaForTopic = this.getSchemaByType(t)
       val watermarkCol = schemaForTopic.fields.filter(_.name.equals(this.topicEventField.get(t).head)) headOption match {
@@ -136,7 +144,14 @@ class PageViewsStream(spark: SparkSession, params: Params) extends StreamJob[Par
           this.log.info(s"Watermark column is ${watermarkCol}")
           this.log.info(s"Maximum delay for messages is ${this.topicsDelayPair.get(t).get} seconds")
           df
-            .select(from_json(col("value").cast(StringType), schemaForTopic).as("data"), col(watermarkCol).cast(LongType))
+            .select(
+              if (this.kafkaInputSerialization == KafkaSerialization.JsonSerialization) {
+                from_json(col("value").cast(StringType), schemaForTopic).as("data")
+              } else {
+                avro.from_avro(col("value"), SchemaToAvro().fromModelToB(t, schemaForTopic).toString).as("data")
+              },
+              col(watermarkCol).cast(LongType)
+            )
             .select(col("data.*"), from_unixtime(col(watermarkCol).divide(lit(1000L))).cast(TimestampType).as(watermarkCol))
             .withWatermark(watermarkCol, s"${this.topicsDelayPair.get(t).get} seconds")
         }
@@ -146,7 +161,13 @@ class PageViewsStream(spark: SparkSession, params: Params) extends StreamJob[Par
           this.log.info(s"Watermark column is ${watermarkCol}")
           this.log.info(s"Maximum delay for messages is ${this.topicsDelayPair.get(t).get} seconds")
           df
-            .select(from_json(col("value").cast(StringType), schemaForTopic).as("data"))
+            .select(
+              if (this.kafkaInputSerialization == KafkaSerialization.JsonSerialization) {
+                from_json(col("value").cast(StringType), schemaForTopic).as("data")
+              } else {
+                avro.from_avro(col("value"), SchemaToAvro().fromModelToB(t, schemaForTopic).toString).as("data")
+              }
+            )
             .select(
               schemaForTopic
                 .filterNot(_.name.equals(watermarkCol))
