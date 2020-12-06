@@ -25,9 +25,15 @@ class ParamsBuilder {
   var schemaManager: Option[String] = None
   var transformationConfigPath: Option[String] = None
   var kafkaInputSerialization: Option[String] = None
+  var kafkaWriterSerialization: Option[String] = None
 
   def withKafaInputSerialization(kafkaSerialization: Option[String]): ParamsBuilder = {
     this.kafkaInputSerialization = kafkaSerialization
+    this
+  }
+
+  def withKafaWriterSerialization(kafkaSerialization: Option[String]): ParamsBuilder = {
+    this.kafkaWriterSerialization = kafkaSerialization
     this
   }
 
@@ -139,6 +145,7 @@ class ParamsBuilder {
     instance.schemaManager = this.schemaManager
     instance.transformationConfigPath = this.transformationConfigPath
     instance.kafkaInputSerialization = this.kafkaInputSerialization
+    instance.kafkaWriterSerialization = this.kafkaWriterSerialization
 
     instance
   }
@@ -162,6 +169,7 @@ final class Params {
   var schemaManager: Option[String] = None
   var transformationConfigPath: Option[String] = None
   var kafkaInputSerialization: Option[String] = None
+  var kafkaWriterSerialization: Option[String] = None
 }
 
 class CLIParams {
@@ -241,6 +249,11 @@ class CLIParams {
         .text(s"Enter one of the following: ${SchemaManagementFactory.AllManagementTypes.map(t => t).mkString(",")}")
 
       opt[String](name = "kafka-input-serialization")
+        .action((value, c) => c.withKafaInputSerialization(Some(value)))
+        .text(s"""Enter one of the following: ${KafkaSerialization.AllSerializations.map(_.toString).mkString(",")}""")
+        .withFallback(KafkaSerialization.JsonSerialization.toString)
+
+      opt[String](name = "kafka-writer-serialization")
         .action((value, c) => c.withKafaInputSerialization(Some(value)))
         .text(s"""Enter one of the following: ${KafkaSerialization.AllSerializations.map(_.toString).mkString(",")}""")
         .withFallback(KafkaSerialization.JsonSerialization.toString)

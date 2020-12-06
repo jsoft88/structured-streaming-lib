@@ -4,8 +4,9 @@ import java.util.concurrent.TimeUnit
 
 import com.google.common.annotations.VisibleForTesting
 import com.org.challenge.stream.config.Params
+import com.org.challenge.stream.jobs.kafka.KafkaSerialization
 import com.org.challenge.stream.transformation.BaseTransform
-import org.apache.spark.sql.{DataFrame, Row, SparkSession, functions}
+import org.apache.spark.sql.{DataFrame, Row, SparkSession, avro, functions}
 import org.apache.spark.sql.streaming.{DataStreamWriter, OutputMode, Trigger}
 import org.apache.spark.sql.types.StringType
 
@@ -13,6 +14,7 @@ case class KafkaTopicWriter(spark: SparkSession, params: Params) extends {
   private var writeInterval: Long = 0
   private var kafkaBrokers: String = ""
   private var outputTopic: String = ""
+  private var kafkaSerializationFormat: KafkaSerialization = KafkaSerialization.JsonSerialization
 } with BaseWriter(spark, params) {
 
   @VisibleForTesting
@@ -20,7 +22,13 @@ case class KafkaTopicWriter(spark: SparkSession, params: Params) extends {
     val columns = dataframe.schema.fields.map(f => functions.col(f.name))
     dataframe
       .withColumn("key", functions.lit(System.currentTimeMillis()).cast(StringType))
-      .withColumn("value", functions.to_json(functions.struct(columns: _*)))
+      .withColumn(
+        "value",
+        if (this.kafkaSerializationFormat == KafkaSerialization.JsonSerialization) {
+          functions.to_json(functions.struct(columns: _*))
+        } else {
+          avro.to_avro(functions.struct(columns: _*))
+        })
       .select(functions.col("key"),functions.col("value"))
   }
 
@@ -35,7 +43,7 @@ case class KafkaTopicWriter(spark: SparkSession, params: Params) extends {
             transformInstance.transformBatch(Some(batchDF)) match {
               case None => throw new Exception("An exception occurred while transforming batch dataframe")
               case Some(btdf) => {
-                btdf.alias("bfdf").show(10, false)
+                //btdf.alias("bfdf").show(10, false)
                 this.log.info(s"Writer will proceed to apply final batch transformation in microbatch ID ${batchId}")
                 this.log.info(s"Ouput topic --> ${this.outputTopic} in broker ${this.kafkaBrokers}")
                 val fdf = this.getFinalDF(btdf)
@@ -66,5 +74,8 @@ case class KafkaTopicWriter(spark: SparkSession, params: Params) extends {
     }
 
     this.writeInterval = this.params.writeInterval
+    this.kafkaSerializationFormat = KafkaSerialization.getKafkaSerialization(
+      params.kafkaWriterSerialization.getOrElse(KafkaSerialization.JsonSerialization).toString
+    )
   }
 }
