@@ -152,7 +152,7 @@ class PageViewsStream(spark: SparkSession, params: Params) extends StreamJob[Par
               },
               col(watermarkCol).cast(LongType)
             )
-            .select(col("data.*"), from_unixtime(col(watermarkCol).divide(lit(1000L))).cast(TimestampType).as(watermarkCol))
+            .select(col("data.*"), from_unixtime(col(watermarkCol)).cast(TimestampType).as(watermarkCol))
             .withWatermark(watermarkCol, s"${this.topicsDelayPair.get(t).get} seconds")
         }
         case Some(df) => {
