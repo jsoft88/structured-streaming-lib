@@ -3,7 +3,7 @@ package com.org.challenge.stream.transformation
 import com.org.challenge.stream.config.ParamsBuilder
 import com.org.challenge.stream.factory.ReaderFactory
 import com.org.challenge.stream.helpers.{FileReader, SparkUtils, TestUtils}
-import com.org.challenge.stream.jobs.kafka.InputDataframeScaffolding
+import com.org.challenge.stream.jobs.kafka.{InputDataframeScaffolding, KafkaSerialization}
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.sql.streaming.{OutputMode, Trigger}
 import org.mockito.Mockito
@@ -27,6 +27,7 @@ class TopPagesByGenderTest extends AnyFunSuite with BeforeAndAfterAll {
       .withKafkaBrokers("localhost:9092")
       .withWindowDuration(10L)
       .withSlidingInterval(5L)
+      .withKafaInputSerialization(Some(KafkaSerialization.JsonSerialization.toString))
       .build()
 
     val transformation = TopPagesByGender(this.sparkSession, appParams)
@@ -77,6 +78,7 @@ class TopPagesByGenderTest extends AnyFunSuite with BeforeAndAfterAll {
       .withSlidingInterval(10L)
       .withTopPagesNumber(4)
       .withSchemaManager("dummy")//required for input stream scaffolding, not for transformation itself
+      .withKafaInputSerialization(Some(KafkaSerialization.JsonSerialization.toString))
       .build()
 
     // update timestamps for watermarks to be valid

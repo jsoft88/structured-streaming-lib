@@ -1,6 +1,6 @@
 package com.org.challenge.stream.schemas.augmenters
 
-import com.org.challenge.stream.schemas.SchemaModel
+import org.apache.spark.sql.types.StructType
 
 /**
  * This trait is responsible for "augmenting" the schema obtained by {@code com.org.challenge.stream.schemas.SchemaManagement}
@@ -12,5 +12,5 @@ import com.org.challenge.stream.schemas.SchemaModel
  *           method.
  */
 trait Augmenter[B] {
-  def fromModelToB(schemaModel: SchemaModel): B
+  def fromModelToB(name: String, schema: StructType): B
 }
